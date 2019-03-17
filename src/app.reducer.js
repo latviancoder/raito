@@ -26,7 +26,7 @@ export function reducer(state, action) {
         draft.posts = draft.posts.filter(post => post.id !== action.payload);
 
         if (action.payload === state.selectedPostId) {
-          if (draft.posts.length > 0) {
+          if (draft.posts.length > 1) {
             draft.selectedPostId = draft.posts[draft.posts.length - 1].id;
           } else {
             delete draft.selectedPostId;

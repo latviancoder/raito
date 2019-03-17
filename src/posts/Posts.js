@@ -52,6 +52,10 @@ const StyledPost = styled.div`
   }
 `;
 
+const StyledDelete = styled.i`
+  padding: 0 10px;
+`;
+
 export default function Posts() {
   const [newPost, setNewPost] = useState('');
   const [state, dispatch] = useAppContext();
@@ -66,7 +70,12 @@ export default function Posts() {
           onClick={() => dispatch({ type: 'SELECT_POST', payload: post.id })}
         >
           <span>{post.label}</span>
-          <i onClick={() => dispatch({ type: 'DELETE_POST', payload: post.id })}>-</i>
+          <StyledDelete
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch({ type: 'DELETE_POST', payload: post.id });
+            }}
+          >-</StyledDelete>
         </StyledPost>;
       })}
     </div>}

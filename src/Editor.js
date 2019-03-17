@@ -269,10 +269,10 @@ export default function Editor() {
   const prevBody = useRef();
   const [state, dispatch] = useAppContext();
 
-  const selectedPost = state.posts[state.posts.findIndex(e => e.id === state.selectedPostId)];
+  const selectedPost = state.posts[state.posts.findIndex(e => e.id === state.selectedPostId)] || {};
 
   const [body, setBody] = useState(() => {
-    return Plain.deserialize(selectedPost.body);
+    return Plain.deserialize(selectedPost.body || '');
   });
 
   useEffect(() => {
