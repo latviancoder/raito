@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/core';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -7,6 +7,7 @@ import produce from 'immer';
 import { useAppContext } from './App';
 import { reorder } from './helpers';
 import { StyledHeading } from './components/StyledHeading';
+import Plain from 'slate-plain-serializer';
 
 const StyledContainer = styled.div`
   position: absolute;
@@ -55,26 +56,21 @@ const StyledTest = styled.div`
 
 export default function BrainDump() {
   const textareaRef = useRef(null);
-  const [newBrainDump, setNewBrainDump] = useState('');
-  const [brainDumps, setBrainDumps] = useState(null);
-
   const [state, dispatch] = useAppContext();
+  const [brainDumps, setBrainDumps] = useState([]);
+  const [newBrainDump, setNewBrainDump] = useState('');
 
-  const selectedPost = useMemo(() => {
-    return state.posts[state.posts.findIndex(e => e.id === state.selectedPostId)];
-  }, [state.posts, state.selectedPostId]);
+  const selectedPost = state.posts.find(e => e.id === state.selectedPostId);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [state.selectedPostId]);
 
-  useEffect(() => {
-    if (state.selectedPostId) {
-      const selectedPost = state.posts.find(e => e.id === state.selectedPostId);
-
-      let matches = selectedPost.body.match(/^~\s+[\S ]+$/mg);
+  function updateBrainDumps() {
+    if (selectedPost.body) {
+      let matches = Plain.serialize(selectedPost.body).match(/^~\s+[\S ]+$/mg);
 
       if (matches) {
         setBrainDumps(matches.map(e => e.replace(/^~\s+/, '')));
@@ -82,42 +78,62 @@ export default function BrainDump() {
         setBrainDumps([]);
       }
     }
-  }, [state.posts, state.selectedPostId]);
+  }
+
+  useEffect(() => {
+    let timeout;
+    if (state.selectedPostId) {
+      if (state.immediate) {
+        updateBrainDumps();
+      } else {
+        timeout = setTimeout(updateBrainDumps, 500);
+      }
+    }
+    return () => clearTimeout(timeout);
+  }, [selectedPost.body, state.selectedPostId, state.immediate]);
+
+  function onDragEnd(result) {
+    if (!result.destination || result.destination.index === result.source.index) {
+      return;
+    }
+
+    const body = Plain.serialize(selectedPost.body);
+
+    const allTildes = body.match(/^~\s+[\S ]+$/mg);
+    const allContents = body.split(/^~\s+[\S ]+$/mg);
+
+    const updatedTildes = produce(allTildes, draft => {
+      reorder(draft, result.source.index, result.destination.index);
+    });
+
+    const updatedBrainDumps = produce(brainDumps, draft => {
+      reorder(draft, result.source.index, result.destination.index);
+    });
+
+    const updatedContents = produce(allContents, draft => {
+      reorder(draft, result.source.index + 1, result.destination.index + 1);
+    });
+
+    let updatedBody = '';
+    updatedContents.forEach((content, i) => {
+      updatedBody += content.trim();
+      if (updatedTildes[i]) {
+        updatedBody += `\n\n${updatedTildes[i]}\n\n`;
+      }
+    });
+
+    setBrainDumps(updatedBrainDumps);
+    dispatch({
+      type: 'UPDATE_BODY', payload: {
+        body: Plain.deserialize(updatedBody.trim()),
+        immediate: true
+      }
+    });
+  }
 
   return <StyledContainer noDisturb={state.noDisturb}>
     <StyledHeading>Brain dump</StyledHeading>
-    {brainDumps && <DragDropContext onDragEnd={(result) => {
-      if (!result.destination || result.destination.index === result.source.index) {
-        return;
-      }
-
-      const { body } = selectedPost;
-      const allTildes = body.match(/^~\s+[\S ]+$/mg);
-      const allContents = body.split(/^~\s+[\S ]+$/mg);
-
-      const updatedTildes = produce(allTildes, draft => {
-        reorder(draft, result.source.index, result.destination.index);
-      });
-
-      const updatedBrainDumps = produce(brainDumps, draft => {
-        reorder(draft, result.source.index, result.destination.index);
-      });
-
-      const updatedContents = produce(allContents, draft => {
-        reorder(draft, result.source.index + 1, result.destination.index + 1);
-      });
-
-      let updatedBody = '';
-      updatedContents.forEach((content, i) => {
-        updatedBody += content.trim();
-        if (updatedTildes[i]) {
-          updatedBody += `\n\n${updatedTildes[i]}\n\n`;
-        }
-      });
-
-      setBrainDumps(updatedBrainDumps);
-      dispatch({ type: 'UPDATE_BODY', payload: updatedBody.trim() });
-    }}>
+    {brainDumps && <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="droppable">
         {(provided, snapshot) => (
           <div
@@ -152,7 +168,27 @@ export default function BrainDump() {
       onKeyPress={(e) => {
         if (e.key === 'Enter' && newBrainDump.length > 0) {
           e.preventDefault();
-          dispatch({ type: 'ADD_BRAIN', payload: newBrainDump });
+
+          let newBody;
+          if (selectedPost.body) {
+            newBody = Plain.serialize(selectedPost.body);
+          } else {
+            newBody = '';
+          }
+
+          if (newBody.trim() === '' || newBody.endsWith('\n')) {
+            newBody += `~ ${newBrainDump}\n\n`;
+          } else {
+            newBody += `\n\n~ ${newBrainDump}\n\n`;
+          }
+
+          dispatch({
+            type: 'UPDATE_BODY', payload: {
+              body: Plain.deserialize(newBody),
+              immediate: true
+            }
+          });
+
           setNewBrainDump('');
         }
       }}

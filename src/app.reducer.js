@@ -9,7 +9,6 @@ export function reducer(state, action) {
 
         draft.posts.push({
           id,
-          body: '',
           label: action.payload.trim()
         });
 
@@ -34,25 +33,11 @@ export function reducer(state, action) {
         }
       });
 
-    case 'ADD_BRAIN':
-      return produce(state, draft => {
-        const label = action.payload.trim();
-
-        const selectedPostIndex = draft.posts.findIndex(e => e.id === state.selectedPostId);
-
-        const body = draft.posts[selectedPostIndex].body;
-
-        if (body.trim() === '' || body.endsWith('\n')) {
-          draft.posts[selectedPostIndex].body += `~ ${label}\n\n`;
-        } else {
-          draft.posts[selectedPostIndex].body += `\n\n~ ${label}\n\n`;
-        }
-      });
-
     case 'UPDATE_BODY':
       return produce(state, draft => {
-        const selectedPostIndex = draft.posts.findIndex(e => e.id === state.selectedPostId);
-        draft.posts[selectedPostIndex].body = action.payload;
+        const selectedPost = draft.posts.find(e => e.id === state.selectedPostId);
+        selectedPost.body = action.payload.body;
+        draft.immediate = action.payload.immediate;
       });
 
     case 'NO_DISTURB':
