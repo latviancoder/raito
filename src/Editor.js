@@ -156,6 +156,14 @@ const renderMark = (props, editor, next) => {
   const { children, mark, attributes } = props;
 
   switch (mark.type) {
+    case 'url':
+      return <span
+        {...attributes}
+        style={{
+          color: '#b19246'
+        }}
+      >{children}</span>;
+
     case 'bold':
       return <strong {...attributes}>{children}</strong>;
 
@@ -226,7 +234,8 @@ const renderMark = (props, editor, next) => {
         <span
           {...attributes}
           style={{
-            color: '#D0CDCA',
+            // color: '#D0CDCA',
+            color: '#bdbbb9',
             fontWeight: 'bold',
           }}
         >

@@ -9,6 +9,7 @@ import Editor from './Editor';
 import { reducer } from './app.reducer';
 import Plain from 'slate-plain-serializer';
 import produce from 'immer';
+import { lineHeight } from './constants';
 
 const globalCss = css`
   * {
@@ -25,7 +26,7 @@ const globalCss = css`
   textarea {
     font-family: 'Merriweather', sans-serif;
     font-size: 15px;
-    line-height: 36px;
+    line-height: ${lineHeight};
   }
 `;
 

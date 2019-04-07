@@ -17,7 +17,8 @@ export function reducer(state, action) {
 
     case 'SELECT_POST':
       return produce(state, draft => {
-        draft.selectedPostId = action.payload;
+        draft.selectedPostId = action.payload.selectedPostId;
+        draft.immediate = action.payload.immediate;
       });
 
     case 'DELETE_POST':

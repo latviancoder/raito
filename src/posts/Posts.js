@@ -3,9 +3,10 @@ import styled from '@emotion/styled';
 import { css } from '@emotion/core';
 import { useAppContext } from '../App';
 import { StyledHeading } from '../components/StyledHeading';
+import { lineHeight } from '../constants';
 
 const StyledContainer = styled.div`
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
@@ -15,7 +16,7 @@ const StyledContainer = styled.div`
   border-right: 1px #f0f0f0 solid;
   display: flex;
   flex-direction: column;
-  line-height: 36px;
+  line-height: ${lineHeight};
   opacity: 1;
   transition: all .3s ease-in;
   ${props => props.noDisturb && css`
@@ -37,10 +38,11 @@ const StyledTextarea = styled.textarea`
 const StyledPost = styled.div`
   cursor: pointer;
   padding: 0 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
   ${props => props.selected && css`
     background: #F4F3EF;
   `}
@@ -53,7 +55,9 @@ const StyledPost = styled.div`
 `;
 
 const StyledDelete = styled.i`
-  padding: 0 10px;
+  position: absolute;
+  right: 15px;
+  top: 0;
 `;
 
 export default function Posts() {
@@ -65,9 +69,16 @@ export default function Posts() {
     {state.posts.length > 0 && <div>
       {state.posts.map(post => {
         return <StyledPost
+          title={post.label}
           key={post.id}
           selected={state.selectedPostId === post.id}
-          onClick={() => dispatch({ type: 'SELECT_POST', payload: post.id })}
+          onClick={() => dispatch({
+            type: 'SELECT_POST',
+            payload: {
+              immediate: true,
+              selectedPostId: post.id
+            }
+          })}
         >
           <span>{post.label}</span>
           <StyledDelete

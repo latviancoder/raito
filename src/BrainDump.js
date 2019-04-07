@@ -1,16 +1,17 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/core';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import produce from 'immer';
+import Plain from 'slate-plain-serializer';
 
 import { useAppContext } from './App';
 import { reorder } from './helpers';
 import { StyledHeading } from './components/StyledHeading';
-import Plain from 'slate-plain-serializer';
+import { lineHeight } from './constants';
 
 const StyledContainer = styled.div`
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
   left: 300px;
@@ -20,7 +21,7 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   background: #FFFEFA;
-  line-height: 36px;
+  line-height: ${lineHeight};
   transition: all .3s cubic-bezier(0.290, 0.710, 0.380, 0.920);
   ${props => props.noDisturb && css`
     transform: translateX(-300px);
@@ -48,10 +49,13 @@ const getListStyle = isDraggingOver => ({
   // background: isDraggingOver ? 'lightblue' : 'lightgrey',
 });
 
-const StyledTest = styled.div`
+const StyledBrain = styled.div`
   user-select: none;
   background: ${props => props.isDragging ? '#fef8e1' : 'transparent'};
   padding: 0 40px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 `;
 
 export default function BrainDump() {
@@ -80,14 +84,12 @@ export default function BrainDump() {
     }
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let timeout;
-    if (state.selectedPostId) {
-      if (state.immediate) {
-        updateBrainDumps();
-      } else {
-        timeout = setTimeout(updateBrainDumps, 500);
-      }
+    if (state.immediate) {
+      updateBrainDumps();
+    } else {
+      timeout = setTimeout(updateBrainDumps, 500);
     }
     return () => clearTimeout(timeout);
   }, [selectedPost.body, state.selectedPostId, state.immediate]);
@@ -143,7 +145,11 @@ export default function BrainDump() {
             {brainDumps.map((label, index) => (
               <Draggable key={`${label}-${index}`} draggableId={`${label}-${index}`} index={index}>
                 {(provided, snapshot) => (
-                  <StyledTest
+                  <StyledBrain
+                    onClick={() => {
+                      console.log('click');
+                    }}
+                    title={label}
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
@@ -151,7 +157,7 @@ export default function BrainDump() {
                     style={provided.draggableProps.style}
                   >
                     {label}
-                  </StyledTest>
+                  </StyledBrain>
                 )}
               </Draggable>
             ))}
